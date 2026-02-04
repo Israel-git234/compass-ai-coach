@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Compass AI Coach",
+    "slug": "compass-ai-coach",
     "version": "1.0.0",
     "orientation": "portrait",
     "plugins": [
@@ -35,6 +35,17 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a987d9fb-bda8-4961-b7f6-1d5bba72b05b"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/a987d9fb-bda8-4961-b7f6-1d5bba72b05b"
     }
   }
 }

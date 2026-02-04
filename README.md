@@ -30,7 +30,17 @@ Compass is a mobile AI coaching app that transforms conversations into actionabl
 - Expo CLI
 - Supabase account
 - Gemini API key
+HOW TO TEST COMPASS:
 
+1. Download Expo Go app:
+   - iOS: https://apps.apple.com/app/expo-go/id982107779
+   - Android: https://play.google.com/store/apps/details?id=host.exp.exponent
+
+2. Open this link on your phone:
+   exp://u.expo.dev/update/5325aed3-742d-4645-9d60-23a3a5272403
+
+3. Or visit the EAS Dashboard and scan the QR code:
+   https://expo.dev/accounts/gamechanger234/projects/compass-ai-coach/updates/5325aed3-742d-4645-9d60-23a3a5272403
 ### Installation
 
 ```bash
