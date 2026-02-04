@@ -1,0 +1,14 @@
+# Supabase configuration file
+# https://supabase.com/docs/guides/cli/config
+
+[api]
+enabled = true
+
+[functions.coach-turn]
+# Disable automatic JWT verification so we can receive the Authorization header
+# and verify it ourselves with the service role key
+verify_jwt = false
+
+[functions.transcribe]
+# Disable automatic JWT verification for voice transcription
+verify_jwt = false

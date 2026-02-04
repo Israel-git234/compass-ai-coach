@@ -1,0 +1,382 @@
+---
+description: Compass coaching-first master rules (always apply)
+alwaysApply: true
+---
+You are building Compass, a production-ready mobile coaching app for iOS and Android.
+
+Compass is coaching-first, AI-second.
+
+The UI has already been designed using Lovable.dev and is the source of truth for screens, navigation, and components.
+
+Your job is to:
+
+Implement a robust mobile backend + client architecture
+using the subfolder aicoachui it has a template ui (either you implemnt it or a better one)
+Respect the coaching philosophy
+
+Avoid inventing features
+
+Build clean, scalable, production-quality code
+
+This is not a web app.
+Do not assume browser patterns.
+Do not optimize for SEO or web routing.
+
+🧠 CORE PRODUCT PHILOSOPHY (NON-NEGOTIABLE)
+
+Cursor must follow these rules at all times:
+
+Coaching is the product
+
+Chat is structured coaching, not generic AI assistance
+
+No silent automation
+
+The AI never acts without user consent
+
+No productivity pressure
+
+Tools support reflection, not hustle
+
+Explainability
+
+The coach can explain why it asks or suggests something
+
+Trust & safety
+
+Not therapy
+
+Not crisis support
+
+Not medical or financial advice
+
+If a feature violates these → do not implement it.
+
+📱 PLATFORM REQUIREMENTS (IMPORTANT)
+
+Target: iOS + Android
+
+Architecture: single shared codebase
+
+Mobile-first performance
+
+Offline-tolerant where possible
+
+Voice & audio are first-class citizens
+
+Recommended stack (you should tell Cursor this explicitly)
+
+Frontend
+
+React Native + Expo (recommended)
+
+TypeScript
+
+Mobile navigation (stack + tabs)
+
+Local state + server sync
+
+Backend
+
+API-based (REST or GraphQL)
+
+Auth
+
+Persistent storage
+
+AI orchestration layer
+
+Payments & entitlements
+
+AI
+
+Gemini (or pluggable LLM abstraction)
+
+Prompt templates
+
+Memory injection
+
+Coach persona control
+
+🎨 UI SOURCE OF TRUTH (CRITICAL RULE)
+
+The UI provided by Lovable.dev is final.
+
+Cursor must:
+
+Match screen names
+
+Match navigation
+
+Match component intent
+
+NOT redesign screens
+
+NOT add new screens without instruction
+
+Cursor’s task is to:
+
+Wire UI → real data
+
+Implement logic behind existing UI
+
+Respect copy & tone
+
+🧩 DOMAIN MODEL (MUST BE EXPLICIT)
+
+Cursor must treat these as core entities, not blobs:
+
+User
+
+id
+
+preferences (text / voice)
+
+values
+
+coaching style preference
+
+consent flags
+
+Context (editable, long-term)
+
+life situation
+
+work/study
+
+constraints
+
+values
+
+updated over time
+
+Coach
+
+id
+
+name
+
+creatorId
+
+philosophy
+
+style (gentle / balanced / direct)
+
+challenge level
+
+boundaries
+
+prompt template
+
+Conversation
+
+id
+
+userId
+
+coachId
+
+messages
+
+mode (text / voice)
+
+timestamps
+
+Insight / Reflection
+
+extracted themes
+
+user-approved
+
+
+Marketplace
+
+coach listing
+
+pricing
+
+creator revenue share
+
+access control
+
+🧠 AI ARCHITECTURE RULES
+
+Cursor must NOT:
+
+Use a single giant prompt
+
+Treat all chats the same
+
+Cursor MUST:
+
+Separate:
+
+system prompt
+
+coach persona prompt
+
+conversation state
+
+user context
+
+Inject memory selectively
+
+Preserve coaching tone
+
+Allow clarifying questions
+
+Allow challenge & reflection
+
+AI behavior is designed, not improvised.
+
+🗣️ VOICE & IMAGE SUPPORT (REQUIRED)
+
+Compass supports:
+
+Voice input (voice notes)
+
+Voice output (AI speaks back)
+
+Image uploads (contextual, not analysis-heavy)
+
+Rules:
+
+Asynchronous voice (NOT calls)
+
+Every voice message maps to a message object
+
+Text & voice are interchangeable representations
+
+💰 MONETIZATION RULES (BUILT-IN)
+
+Cursor must implement:
+
+Free vs Pro entitlements
+
+Coach purchases
+
+Marketplace access control
+
+Cursor must NOT:
+
+Gate basic trust features aggressively
+
+Add ads
+
+Sell user data
+
+🚧 MVP SCOPE CONSTRAINTS
+
+Explicitly OUT of MVP:
+
+ADHD coach logic
+
+Real-time voice calls
+
+Creator self-serve publishing (admin-only initially)
+
+Advanced analytics
+
+But architecture must allow future expansion.
+
+🛠️ HOW CURSOR SHOULD WORK (PROCESS RULES)
+Cursor MUST:
+
+Build incrementally
+
+Explain assumptions
+
+Ask before inventing
+
+Prefer clarity over speed
+
+Cursor MUST NOT:
+
+“Just scaffold everything”
+
+Skip schemas
+
+Hard-code logic
+
+Collapse concepts
+
+🧭 REQUIRED BUILD ORDER (DO NOT SKIP)
+
+Cursor must follow this sequence:
+
+Project setup
+
+Mobile app scaffold
+
+TypeScript
+
+Core domain models
+
+Schemas & types
+
+Auth & user state
+
+Coach system
+
+Conversation engine
+
+AI orchestration
+
+Memory & context
+
+Voice & media
+
+Marketplace & entitlements
+
+UI wiring
+
+Any other order is incorrect.
+
+✅ DEFINITION OF “DONE”
+
+The app is considered “ready” when:
+
+A user can onboard
+
+Complete deep intake
+
+Choose a coach
+
+Have real coaching conversations (text or voice)
+
+See reflections over time
+
+Enable tools with consent
+
+Upgrade to Pro
+
+Purchase a coach
+
+Use the app meaningfully 
+# Compass (always apply)
+
+## Product philosophy (non-negotiable)
+- Coaching is the product; AI is a means.
+- No silent automation; AI never acts without explicit user consent.
+- No productivity pressure; tools support reflection.
+- Explainability: the coach can explain why it asks/suggests something.
+- Trust & safety: not therapy/crisis support; no medical/legal/financial advice.
+- If a feature violates these → do not implement it.
+
+## Platform direction
+- Target iOS + Android with a single codebase (React Native + Expo by default).
+- Treat `aicoachui/` as UI reference/source-of-truth; do not redesign.
+
+## Core domain objects (must remain explicit)
+- User, UserContext, Coach, Conversation, Message, Insight, ToolPermission, MarketplaceItem, Entitlement.
+
+## AI orchestration rules
+- Do not use a single giant prompt.
+- Build a prompt pipeline: SystemRules → Persona → UserContext → WindowedConversation → ToolAwareness.
+- Classify responses (question/reflection/challenge/suggestion); require consent for tool suggestions.
+
+## Build order (do not skip)
+Project setup → Expo scaffold → Types → Domain models → Schemas/types → Auth/user state → Coach system → Conversation engine → AI orchestration → Memory/context → Voice/media → Marketplace/entitlements → UI wiring.
+
+TOOLS & FEATURES:(we will implement thm after the app is done as an addon ill tell you)
+• Calendar, tasks, reminders are SUPPORTING tools only

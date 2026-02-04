@@ -1,0 +1,92 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+*.log
+
+# Production
+build/
+dist/
+
+# Environment variables (CRITICAL - contains API keys)
+.env
+.env.local
+.env.*.local
+apps/mobile/.env
+**/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Expo
+.expo/
+.expo-shared/
+expo-env.d.ts
+web-build/
+
+# Native builds
+ios/
+android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# Documentation / Internal guides (exclude from public repo)
+# Keep only: README.md, DEVPOST_SUBMISSION_PACK.md
+HACKATHON_SUBMISSION_CHECKLIST.md
+MVP_QUALITY_COMPENSATION.md
+COMPLETION_CHECKLIST.md
+QUICK_DEPLOY.md
+AI_MODEL_ALTERNATIVES.md
+MODEL_FIX.md
+QUICK_FIX_STEPS.md
+MODEL_SWITCH_GUIDE.md
+UPDATE_SUPABASE_SECRET.md
+QUOTA_EXHAUSTED_SOLUTION.md
+FREE_TIER_STRATEGY.md
+FREE_TIER_ULTRA_OPTIMIZED.md
+GEMINI_TIER_EXPLANATION.md
+MVP_DEPLOYMENT.md
+MVP_COST_OPTIMIZATION.md
+UPDATE_GEMINI_KEY.md
+GEMINI_PAID_TIER_SETUP.md
+QUOTA_SOLUTIONS.md
+HOW_TO_GET_TOKEN.md
+QUICK_TEST.md
+test-ai-coach.md
+DEPLOYMENT_GUIDE.md
+TESTING_CHECKLIST.md
+ROADMAP.md
+AGENTS.md
+
+# Test scripts (may contain sensitive info)
+test-ai-coach.js
+test-gemini-list-models.js
+test-gemini-simple.js
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Supabase
+.supabase/
+
+# Embedded repos (submodules)
+aicoachui/
