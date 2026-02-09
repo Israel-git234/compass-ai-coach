@@ -12,6 +12,12 @@ import {
   type SentimentType,
 } from "../../../ai/prompts/coaching_techniques.ts";
 import { runCoachTurn, type ConversationMessage } from "../../../ai/orchestrator.ts";
+import { logCoachTurnTrace } from "../../../opik/trace.ts";
+import { evaluateCoachResponse } from "../../../opik/evaluations.ts";
+import { getCurrentExperimentId } from "../../../opik/experiments.ts";
+import { calculateMetrics } from "../../../opik/metrics.ts";
+import { traceLLMCall } from "../../../opik/trace-wrapper.ts";
+import { testOpikConnection } from "../../../opik/test-opik.ts";
 
 type CoachTurnRequestBody = {
   conversationId?: string;
@@ -74,12 +80,18 @@ async function callGeminiInstruction(params: {
   topP?: number;
   systemInstruction: string;
   transcript: string;
+  traceName?: string; // Optional trace name for Opik
+  traceMetadata?: Record<string, any>; // Optional metadata for tracing
+  traceTags?: string[]; // Optional tags for tracing
+  conversationId?: string; // Optional conversation ID for thread grouping
 }): Promise<string> {
+  const startTime = new Date().toISOString();
   // Default to a Gemini 3 family model for hackathon demos.
   // Fallback to gemini-2.5-flash if unavailable.
   const model = params.model ?? Deno.env.get("GEMINI_INSTRUCTION_MODEL") ?? Deno.env.get("GEMINI_MODEL") ?? "gemini-3-flash-preview";
   const temperature = params.temperature ?? 0.3;
   const topP = params.topP ?? 0.95;
+  const traceName = params.traceName || "gemini-instruction-call";
 
   // Use v1beta API (has more models available, including gemini-2.5-flash)
   const mkUrl = (m: string) =>
@@ -113,18 +125,42 @@ async function callGeminiInstruction(params: {
   }
 
   let resp = await post(model);
+  let actualModel = model;
   if (!resp.ok && resp.status === 404 && model !== "gemini-2.5-flash") {
     // Automatic fallback if Gemini 3 preview model isn't enabled for this key/project.
     resp = await post("gemini-2.5-flash");
+    actualModel = "gemini-2.5-flash";
   }
+
+  const endTime = new Date().toISOString();
 
   if (!resp.ok) {
     const errorText = await resp.text().catch(() => "");
-    throw new Error(
-      `Gemini (instruction) failed with status ${resp.status}: ${resp.statusText}${
-        errorText ? ` – ${errorText}` : ""
-      }`,
-    );
+    const error = `Gemini (instruction) failed with status ${resp.status}: ${resp.statusText}${
+      errorText ? ` – ${errorText}` : ""
+    }`;
+
+    // Trace failed call
+    void traceLLMCall({
+      traceName,
+      input: {
+        systemInstruction: params.systemInstruction.slice(0, 500),
+        transcript: params.transcript.slice(0, 1000),
+      },
+      model: actualModel,
+      startTime,
+      endTime,
+      error,
+      metadata: {
+        ...params.traceMetadata,
+        instruction_type: params.systemInstruction.slice(0, 100),
+      },
+      tags: params.traceTags || ["gemini", "instruction"],
+      threadId: params.conversationId,
+      temperature,
+    });
+
+    throw new Error(error);
   }
 
   const data: any = await resp.json();
@@ -132,8 +168,50 @@ async function callGeminiInstruction(params: {
     data?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text ?? "").join("")?.trim() ?? "";
 
   if (!text) {
-    throw new Error("Gemini (instruction) response did not contain text content");
+    const error = "Gemini (instruction) response did not contain text content";
+    
+    // Trace empty response
+    void traceLLMCall({
+      traceName,
+      input: {
+        systemInstruction: params.systemInstruction.slice(0, 500),
+        transcript: params.transcript.slice(0, 1000),
+      },
+      model: actualModel,
+      startTime,
+      endTime,
+      error,
+      metadata: {
+        ...params.traceMetadata,
+        instruction_type: params.systemInstruction.slice(0, 100),
+      },
+      tags: params.traceTags || ["gemini", "instruction"],
+      threadId: params.conversationId,
+      temperature,
+    });
+
+    throw new Error(error);
   }
+
+  // Trace successful call
+  void traceLLMCall({
+    traceName,
+    input: {
+      systemInstruction: params.systemInstruction.slice(0, 500),
+      transcript: params.transcript.slice(0, 1000),
+    },
+    output: text.slice(0, 2000),
+    model: actualModel,
+    startTime,
+    endTime,
+    metadata: {
+      ...params.traceMetadata,
+      instruction_type: params.systemInstruction.slice(0, 100),
+    },
+    tags: params.traceTags || ["gemini", "instruction"],
+    threadId: params.conversationId,
+    temperature,
+  });
 
   return text;
 }
@@ -353,6 +431,13 @@ async function updateMemoryAndInsights(params: UpdateMemoryAndInsightsParams): P
       systemInstruction: COMBINED_EXTRACTION_INSTRUCTION,
       transcript,
       temperature: 0.2,
+      traceName: "memory-extraction",
+      traceMetadata: {
+        extraction_type: "combined",
+        message_count: messages.length,
+      },
+      traceTags: ["memory", "extraction", "compass"],
+      conversationId,
     });
     
     // Parse the combined JSON response
@@ -507,6 +592,14 @@ function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
+  // TEST ROUTE - Remove after debugging
+  const url = new URL(req.url);
+  if (url.pathname.includes("/test-opik") || req.url.includes("test-opik")) {
+    console.log("Opik test endpoint called");
+    const result = await testOpikConnection();
+    return jsonResponse(result, { status: 200 });
+  }
+
   if (req.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
   }
@@ -930,6 +1023,13 @@ ${sessionTypeBlock}
           systemInstruction: CRISIS_DETECTION_INSTRUCTION,
           transcript: `User message: ${message}`,
           temperature: 0.2,
+          traceName: "crisis-detection",
+          traceMetadata: {
+            analysis_type: "crisis",
+            session_type: effectiveSessionType,
+          },
+          traceTags: ["safety", "crisis-detection", "compass"],
+          conversationId: conversation.id,
         });
         try {
           const cleanCrisis = crisisResponse.trim().replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
@@ -946,6 +1046,13 @@ ${sessionTypeBlock}
           systemInstruction: SENTIMENT_ANALYSIS_INSTRUCTION,
           transcript: `User message: ${message}`,
           temperature: 0.2,
+          traceName: "sentiment-analysis",
+          traceMetadata: {
+            analysis_type: "sentiment",
+            session_type: effectiveSessionType,
+          },
+          traceTags: ["sentiment", "analysis", "compass"],
+          conversationId: conversation.id,
         });
         try {
           const cleanSentiment = sentimentResponse.trim().replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
@@ -1018,6 +1125,10 @@ ${sentimentAnalysis.sentiment === "confused" ? "- Slow down. Ask clarifying ques
       enhancedSessionContext = `${sessionContextBlock}\n\n${sentimentBlock}\n\n${responseTypeGuidance}`;
     }
 
+    const coachTurnStartTime = new Date().toISOString();
+    const geminiModel = Deno.env.get("GEMINI_MODEL") ?? "gemini-3-flash-preview";
+    const temperature = 0.7; // Default temperature (can be made configurable)
+
     const result = await runCoachTurn({
       coach: coachPersonaObj,
       userContextBlock,
@@ -1027,10 +1138,79 @@ ${sentimentAnalysis.sentiment === "confused" ? "- Slow down. Ask clarifying ques
       userMessage: message,
       gemini: {
         apiKey: geminiApiKey,
-        model: Deno.env.get("GEMINI_MODEL") ?? "gemini-3-flash-preview",
+        model: geminiModel,
+        temperature,
       },
     });
     coachText = result.text;
+    const coachTurnEndTime = new Date().toISOString();
+
+    // Opik observability (Commit to Change hackathon): Enhanced implementation
+    // 1. Get or create experiment ID for this model/configuration
+    // 2. Run LLM-as-judge evaluation (async, non-blocking)
+    // 3. Calculate performance metrics
+    // 4. Log comprehensive trace with all data
+
+    // Get experiment ID (async, non-blocking)
+    const experimentIdPromise = getCurrentExperimentId({
+      model: geminiModel,
+      temperature,
+      promptVersion: "v1",
+    });
+
+    // Run evaluation (async, non-blocking) - only if enabled
+    const enableEvaluation = Deno.env.get("OPIK_ENABLE_EVALUATION") !== "false";
+    const evaluationPromise = enableEvaluation
+      ? evaluateCoachResponse({
+          userMessage: message,
+          coachResponse: coachText,
+          sessionType: effectiveSessionType ?? undefined,
+          coachId: coachIdToUse ?? undefined,
+          geminiApiKey,
+        })
+      : Promise.resolve(null);
+
+    // Calculate metrics
+    const metrics = calculateMetrics({
+      startTime: coachTurnStartTime,
+      endTime: coachTurnEndTime,
+      userMessage: message,
+      coachResponse: coachText,
+    });
+
+    // Wait for async operations (with timeout to avoid blocking)
+    const [experimentId, evaluation] = await Promise.all([
+      experimentIdPromise.catch(() => null),
+      evaluationPromise.catch(() => null),
+    ]).catch(() => [null, null]);
+
+    // Add evaluation scores to metrics if available
+    if (evaluation) {
+      metrics.qualityScores = {
+        relevance: evaluation.relevance,
+        tone: evaluation.tone,
+        safety: evaluation.safety,
+        helpfulness: evaluation.helpfulness,
+        overall: evaluation.overall,
+      };
+    }
+
+    // Log comprehensive trace to Opik (fire-and-forget)
+    console.log("Opik: Starting trace logging for conversation:", conversation.id);
+    void logCoachTurnTrace({
+      userMessage: message,
+      coachResponse: coachText,
+      sessionType: effectiveSessionType ?? undefined,
+      coachId: coachIdToUse ?? undefined,
+      conversationId: conversation.id,
+      model: geminiModel,
+      startTime: coachTurnStartTime,
+      endTime: coachTurnEndTime,
+      evaluation: evaluation || undefined,
+      metrics,
+      experimentId: experimentId || undefined,
+      temperature,
+    });
   } catch (e: any) {
     return jsonResponse(
       { error: "Failed to generate coach response", details: String(e?.message ?? e) },
