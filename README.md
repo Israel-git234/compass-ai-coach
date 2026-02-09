@@ -91,6 +91,5 @@ Compass uses **Gemini 3** as the core intelligence layer:
 
 MIT
 
-## Built for
+#
 
-[Gemini 3 Hackathon](https://gemini3.devpost.com/)
